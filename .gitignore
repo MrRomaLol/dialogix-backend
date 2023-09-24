@@ -1,0 +1,6 @@
+/node_modules/
+/.gitignore
+/package-lock.json
+/database/sessions.db
+/database/local_database.db
+/.idea
