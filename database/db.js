@@ -1,16 +1,18 @@
 const sqlite3 = require('sqlite3');
+const {readFileSync} = require("fs");
 
 const db = new sqlite3.Database('./database/local_database.db');
 
-db.serialize(function() {
-    db.run("CREATE TABLE IF NOT EXISTS users ( \
-    id INTEGER PRIMARY KEY, \
-    username TEXT UNIQUE, \
-    email TEXT UNIQUE, \
-    hashed_password BLOB, \
-    salt BLOB, \
-    register_date DATETIME DEFAULT CURRENT_TIMESTAMP \
-  )");
+const sqlQuery = readFileSync("./database/queries/create_tables.sql").toString();
+const queryArr = sqlQuery.toString().split(');');
+
+db.serialize(function () {
+    queryArr.forEach((query) => {
+        if (query) {
+            query += ');';
+            db.run(query);
+        }
+    })
 });
 
 module.exports = db;
