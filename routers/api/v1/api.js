@@ -2,6 +2,7 @@ const {Router} = require('express');
 const router = Router();
 
 const {loginStatus, register, logout, login} = require("./account");
+const {addFriend} = require("./friends");
 
 
 //main
@@ -15,7 +16,10 @@ router.get('/', (req, res) => {
 router.post('/login', login)
 router.post('/logout', logout)
 router.post('/register', register);
-router.post('/loginstatus', loginStatus);
+// router.get('/loginstatus', loginStatus);
+
+//friends
+router.post('/addfriend', addFriend);
 
 
 module.exports = router;

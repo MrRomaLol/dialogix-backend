@@ -25,7 +25,7 @@ passport.serializeUser(function (user, done) {
 });
 
 passport.deserializeUser(function (user, done) {
-    return done(null, user);
+    done(null, user);
 });
 
 const register = (req, res, next) => {
@@ -90,19 +90,19 @@ const login = (req, res, next) => {
 const logout = (req, res, next) => {
     req.logout(function (err) {
         if (err) return next(err);
-        res.redirect('/');
+        res.json({status: 'success', message: ''});
     })
 }
 
-const loginStatus = (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.json({
-            status: 'notloggedin'
-        });
-    }
-    res.json({
-        status: 'loggedin'
-    })
-}
+// const loginStatus = (req, res) => {
+//     if (!req.isAuthenticated()) {
+//         return res.json({
+//             status: 'notloggedin'
+//         });
+//     }
+//     res.json({
+//         status: 'loggedin'
+//     })
+// }
 
-module.exports = {register, login, logout, loginStatus}
+module.exports = {register, login, logout}
