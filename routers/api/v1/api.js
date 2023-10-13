@@ -2,8 +2,7 @@ const {Router} = require('express');
 const router = Router();
 
 const {loginStatus, register, logout, login} = require("./account");
-const {addFriend} = require("./friends");
-
+const friendsRoute = require('./friends')
 
 //main
 router.get('/', (req, res) => {
@@ -19,7 +18,8 @@ router.post('/register', register);
 // router.get('/loginstatus', loginStatus);
 
 //friends
-router.post('/addfriend', addFriend);
+router.use('/friends', friendsRoute);
+
 
 
 module.exports = router;

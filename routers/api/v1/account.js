@@ -7,7 +7,7 @@ const db = require("../../../database/db")
 passport.use(new LocalStrategy(function verify(username, password, done) {
     if (username.includes(' ')) return done(null, false, {message: 'Incorrect username or password.'});
 
-    db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username, username], function (err, row) {
+    db.get('SELECT * FROM accounts WHERE username = ? OR email = ?', [username, username], function (err, row) {
         if (err) return done(err);
         if (!row) return done(null, false, {message: 'Incorrect username or password.'});
 
@@ -32,18 +32,20 @@ const register = (req, res, next) => {
     const salt = crypto.randomBytes(16);
     crypto.pbkdf2(req.body.password, salt, 310000, 32, 'sha256', function (err, hashedPasswd) {
         if (err) {
-            res.json({status: 'error', message: err.message});
+            res.json({ok: false, status: 'error', message: err.message});
             return next(err);
         }
 
-        db.run("INSERT INTO users (username, email, hashed_password, salt) VALUES (?, ?, ?, ?)", [
+        db.run("INSERT INTO accounts (username, email, hashed_password, salt) VALUES (?, ?, ?, ?)", [
             req.body.username,
             req.body.email,
             hashedPasswd,
             salt
         ], function (err) {
+            db.run("INSERT INTO users (user_id, nickname) VALUES (?, ?)", [this.lastID, req.body.username]);
+
             if (err) {
-                res.json({status: 'error', message: err.message});
+                res.json({ok: false, status: 'error', message: err.message});
                 return next(err);
             }
             const user = {
@@ -52,10 +54,10 @@ const register = (req, res, next) => {
             };
             req.login(user, function (err) {
                 if (err) {
-                    res.json({status: 'error', message: err.message});
+                    res.json({ok: false, status: 'error', message: err.message});
                     return next(err);
                 }
-                res.json({status: 'success', message: ''});
+                res.json({ok: true, status: 'success', message: ''});
             })
         })
     })
@@ -64,11 +66,11 @@ const register = (req, res, next) => {
 const login = (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) {
-            res.json({status: 'error', message: err.message});
+            res.json({ok: false, status: 'error', message: err.message});
             return next(err);
         }
         if (!user) {
-            return res.json({status: 'notauser', message: 'user not found'});
+            return res.json({ok: false, status: 'notauser', message: 'user not found'});
         }
 
         if (req.body.remember) {
@@ -79,10 +81,10 @@ const login = (req, res, next) => {
 
         req.login(user, (err) => {
             if (err) {
-                res.json({status: 'error', message: err.message});
+                res.json({ok: false, status: 'error', message: err.message});
                 return next(err);
             }
-            return res.json({status: 'success', message: ''});
+            return res.json({ok: true, status: 'success', message: ''});
         });
     })(req, res, next);
 }
@@ -90,7 +92,7 @@ const login = (req, res, next) => {
 const logout = (req, res, next) => {
     req.logout(function (err) {
         if (err) return next(err);
-        res.json({status: 'success', message: ''});
+        return res.json({ok: true, status: 'success', message: ''});
     })
 }
 

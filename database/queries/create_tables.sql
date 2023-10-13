@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS [users] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [user_id] INTEGER NOT NULL,
 [nickname] TEXT NOT NULL UNIQUE,
-[avatar_url] TEXT NOT NULL,
-[status] TEXT NOT NULL,
+[avatar_url] TEXT,
+[status] TEXT,
 FOREIGN KEY([user_id]) REFERENCES [accounts]([id]));
 
 CREATE TABLE IF NOT EXISTS [friends] (
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS [guilds] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [creator_id] INTEGER NOT NULL,
 [name] TEXT NOT NULL,
-[avatar_url] TEXT NOT NULL,
+[avatar_url] TEXT,
 [created_at] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY([creator_id]) REFERENCES [accounts]([id]));
 
