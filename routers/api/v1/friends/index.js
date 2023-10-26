@@ -4,18 +4,26 @@ const router = Router();
 
 const {
     sendRequest,
-    getPending,
     getFriends,
     acceptRequest,
     rejectRequest,
-    getSent,
     unSendRequest
 } = require("./friends");
 
 
+router.use(function (req, res, next) {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({
+            ok: false,
+            status: 'unauthorized'
+        })
+    }
+    next();
+})
+
 router.get('/', getFriends);
-router.get('/pending', getPending);
-router.get('/sent', getSent); //бурда
+// router.get('/pending', getPending);
+// router.get('/sent', getSent); //бурда
 router.post('/send', sendRequest);
 router.delete('/send', unSendRequest);
 router.post('/accept', acceptRequest);

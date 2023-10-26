@@ -73,7 +73,7 @@ const login = (req, res, next) => {
             return res.json({ok: false, status: 'notauser', message: 'user not found'});
         }
 
-        if (req.body.remember) {
+        if (req.body.rememberMe) {
             req.session.cookie.maxAge = 2592000000; // 30 days
         } else {
             req.session.cookie.expires = false;
@@ -96,15 +96,15 @@ const logout = (req, res, next) => {
     })
 }
 
-// const loginStatus = (req, res) => {
-//     if (!req.isAuthenticated()) {
-//         return res.json({
-//             status: 'notloggedin'
-//         });
-//     }
-//     res.json({
-//         status: 'loggedin'
-//     })
-// }
+const loginStatus = (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.json({
+            ok: false
+        });
+    }
+    res.json({
+        ok: true
+    })
+}
 
-module.exports = {register, login, logout}
+module.exports = {register, login, logout, loginStatus}
