@@ -1,39 +1,31 @@
 const db = require("../../../../database/db")
 
-const isUserAlreadyAddedQuery = `
-SELECT * 
-FROM friends 
-WHERE (user_id1 = ? AND user_id2 = ?)
-OR (user_id1 = ? AND user_id2 = ?);
+const requestFriendQuery = `
+INSERT INTO friends (user_id1, user_id2, status)
+SELECT ?, accounts.id, 'pending'
+FROM accounts
+WHERE accounts.username = ?
+AND accounts.id <> ?
+AND NOT EXISTS (
+    SELECT 1
+    FROM friends
+    WHERE ((user_id1 = ? AND user_id2 = accounts.id) OR (user_id1 = accounts.id AND user_id2 = ?))
+    AND status IN ('friends', 'pending')
+);
+`
+const getUserByUsernameQuery = `
+SELECT u.id, u.nickname, u.avatar_url, u.status
+FROM users u
+JOIN accounts a ON u.user_id = a.id
+WHERE a.username = ?; 
 `
 
-const sendFriendRequestAgain = `
-UPDATE friends
-SET status = 'pending'
-WHERE user_id1 = ? AND user_id2 = ?;
+const getUserByIdQuery = `
+SELECT u.id, u.nickname, u.avatar_url, u.status
+FROM users u
+JOIN accounts a ON u.user_id = a.id
+WHERE a.id = ?; 
 `
-
-// const getPendingFriendsAccounts = `
-// SELECT u.user_id as id, u.nickname, u.avatar_url, u.status
-// FROM users u
-// JOIN friends f ON u.id = f.user_id1
-// WHERE f.user_id2 = ? AND f.status = 'pending';
-// `
-//
-// const getSentFriendsAccounts = `
-// SELECT u.user_id as id, u.nickname, u.avatar_url, u.status
-// FROM users u
-// JOIN friends f ON u.id = f.user_id2
-// WHERE f.user_id1 = ? AND f.status = 'pending';
-// `
-//
-// const getFriendsAccounts = `
-// SELECT u.user_id as id, u.nickname, u.avatar_url, u.status
-// FROM users u
-// JOIN friends f1 ON u.id = f1.user_id1
-// JOIN friends f2 ON u.id = f2.user_id2
-// WHERE (f1.user_id2 = ? AND f1.status = 'friends') OR (f2.user_id1 = ? AND f2.status = 'friends')
-// `
 
 const getFriendsStatusQuery = `
 SELECT DISTINCT 
@@ -63,15 +55,14 @@ SET status = 'friends'
 WHERE user_id1 = ? AND user_id2 = ?;
 `
 
-const rejectRequestQuery = `
-UPDATE friends
-SET status = 'denied'
+const unSendOrRejectRequestQuery = `
+DELETE FROM friends
 WHERE user_id1 = ? AND user_id2 = ?;
 `
 
-const unSendRequestQuery = `
+const deleteFromFriendsQuery = `
 DELETE FROM friends
-WHERE user_id1 = ? AND user_id2 = ?;
+WHERE (user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?);
 `
 
 
@@ -92,87 +83,31 @@ const getFriends = (req, res) => {
 }
 
 const sendRequest = (req, res) => {
+    const myId = req.user.id;
     const friendName = req.body.nickname;
 
-    if (req.user.username === friendName) {
-        return res.json({
-            ok: false,
-            status: 'selfadd',
-            message: 'Cannot add self'
-        })
-    }
-
-    db.get('SELECT * FROM accounts WHERE username = ?', [friendName], function (err, row) {
+    db.run(requestFriendQuery, [myId, friendName, myId, myId], function (err) {
         if (err) {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
-        if (!row) {
-            return res.json({ok: false, status: 'usernotfound', message: 'User not found'});
+        if (this.changes > 0) {
+            db.get(getUserByUsernameQuery, [friendName], (err, row) => {
+                if (err) {
+                    console.log(err);
+                    return res.json({ok: false, status: 'error', message: err.message});
+                }
+
+                db.get(getUserByIdQuery, [myId], (err, row) => {
+
+                })
+
+                return res.json({ok: true, friend: row});
+            })
+        } else {
+            return res.json({ok: false, status: 'nochange'});
         }
-
-        db.get(isUserAlreadyAddedQuery, [req.user.id, row.id, row.id, req.user.id], function (err, row1) {
-            if (err) {
-                console.log(err);
-                return res.json({ok: false, status: 'error', message: err.message});
-            }
-
-            if (!row1) {
-                db.run('INSERT INTO friends (user_id1, user_id2) values (?, ?)', [req.user.id, row.id], function (err) {
-                    if (err) {
-                        console.log(err);
-                        return res.json({ok: false, status: 'error', message: err.message});
-                    }
-
-                    db.run('SELECT * FROM [users] WHERE user_id = ?', [row.id], (err, row) => {
-                        if (err) {
-                            console.log(err);
-                            return res.json({ok: false, status: 'error', message: err.message});
-                        }
-
-                        const user = {
-                            nickname: row.nickname,
-                            avatarUrl: row.avatarUrl,
-                            status: row.status,
-                        }
-
-                        return res.json({
-                            ok: true,
-                            user
-                        })
-                    })
-                })
-            }
-
-            if (row1.status === 'rejected') {
-                db.run(sendFriendRequestAgain, [req.user.id, row.id], function (err) {
-                    if (err) {
-                        console.log(err);
-                        return res.json({ok: false, status: 'error', message: err.message});
-                    }
-
-                    db.run('SELECT * FROM [users] WHERE user_id = ?', [row.id], (err, row) => {
-                        if (err) {
-                            console.log(err);
-                            return res.json({ok: false, status: 'error', message: err.message});
-                        }
-
-                        const user = {
-                            nickname: row.nickname,
-                            avatarUrl: row.avatarUrl,
-                            status: row.status,
-                        }
-
-                        return res.json({
-                            ok: true,
-                            user
-                        })
-                    })
-                })
-            }
-            return res.json({ok: false, status: 'alreadyadded', message: 'Users already added'});
-        })
     })
 }
 
@@ -180,7 +115,7 @@ const unSendRequest = (req, res) => {
     const myId = req.user.id;
     const userId = req.body.userId;
 
-    db.run(unSendRequestQuery, [myId, userId], function (err) {
+    db.run(unSendOrRejectRequestQuery, [myId, userId], function (err) {
         if (err) {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
@@ -188,41 +123,10 @@ const unSendRequest = (req, res) => {
 
         return res.json({
             ok: true,
+            userId
         })
     })
 }
-
-// const getSent = (req, res) => {
-//     const myId = req.user.id;
-//
-//     db.all(getSentFriendsAccounts, [myId], function (err, rows) {
-//         if (err) {
-//             console.log(err);
-//             return res.json({ok: false, status: 'error', message: err.message});
-//         }
-//
-//         return res.json({
-//             ok: true,
-//             friends: rows
-//         })
-//     })
-// }
-
-// const getPending = (req, res) => {
-//     const myId = req.user.id;
-//
-//     db.all(getPendingFriendsAccounts, [myId], function (err, rows) {
-//         if (err) {
-//             console.log(err);
-//             return res.json({ok: false, status: 'error', message: err.message});
-//         }
-//
-//         return res.json({
-//             ok: true,
-//             friends: rows
-//         })
-//     })
-// }
 
 const acceptRequest = (req, res) => {
     const myId = req.user.id;
@@ -236,6 +140,7 @@ const acceptRequest = (req, res) => {
 
         return res.json({
             ok: true,
+            userId
         })
     })
 }
@@ -244,7 +149,7 @@ const rejectRequest = (req, res) => {
     const myId = req.user.id;
     const userId = req.body.userId;
 
-    db.run(rejectRequestQuery, [userId, myId], function (err) {
+    db.run(unSendOrRejectRequestQuery, [userId, myId], function (err) {
         if (err) {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
@@ -252,9 +157,27 @@ const rejectRequest = (req, res) => {
 
         return res.json({
             ok: true,
+            userId
+        })
+    })
+}
+
+const deleteFriend = (req, res) => {
+    const myId = req.user.id;
+    const userId = req.body.userId;
+
+    db.run(deleteFromFriendsQuery, [myId, userId, userId, myId], function (err) {
+        if (err) {
+            console.log(err);
+            return res.json({ok: false, status: 'error', message: err.message});
+        }
+
+        return res.json({
+            ok: true,
+            userId
         })
     })
 }
 
 
-module.exports = {sendRequest, getFriends, acceptRequest, rejectRequest, unSendRequest}
+module.exports = {sendRequest, getFriends, acceptRequest, rejectRequest, unSendRequest, deleteFriend}

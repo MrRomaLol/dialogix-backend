@@ -5,10 +5,16 @@ const session = require("express-session");
 const passport = require("passport");
 const SQLiteStore = require('connect-sqlite3')(session);
 const logger = require('morgan');
+const {createServer} = require('http');
+const {initializeSocketIO} = require("./socket");
+
 
 const PORT = 8080;
 
 const app = express();
+const server = createServer(app);
+
+initializeSocketIO(server);
 
 app.use(logger('dev'))
 app.use(express.json());
@@ -26,6 +32,6 @@ app.use(passport.session());
 
 app.use('/', router);
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server started on port: ${PORT}`);
 });

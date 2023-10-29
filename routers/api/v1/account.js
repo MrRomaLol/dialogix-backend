@@ -2,7 +2,15 @@ const crypto = require("crypto");
 const passport = require("passport");
 const LocalStrategy = require('passport-local');
 
-const db = require("../../../database/db")
+const db = require("../../../database/db");
+
+const getUserInformationQuery = `
+SELECT a.id, a.username, u.nickname, u.avatar_url, u.status
+FROM users u 
+INNER JOIN accounts a 
+ON a.id = u.user_id
+WHERE a.id = ?;
+`
 
 passport.use(new LocalStrategy(function verify(username, password, done) {
     if (username.includes(' ')) return done(null, false, {message: 'Incorrect username or password.'});
@@ -48,8 +56,9 @@ const register = (req, res, next) => {
                 res.json({ok: false, status: 'error', message: err.message});
                 return next(err);
             }
+            const lastId = this.lastID;
             const user = {
-                id: this.lastID,
+                id: lastId,
                 username: req.body.username
             };
             req.login(user, function (err) {
@@ -57,7 +66,13 @@ const register = (req, res, next) => {
                     res.json({ok: false, status: 'error', message: err.message});
                     return next(err);
                 }
-                res.json({ok: true, status: 'success', message: ''});
+                db.get(getUserInformationQuery, [lastId], (err, row) => {
+                    if (err) {
+                        res.json({ok: false, status: 'error', message: err.message});
+                        return next(err);
+                    }
+                    res.json({ok: true, userInfo: row});
+                })
             })
         })
     })
@@ -69,6 +84,7 @@ const login = (req, res, next) => {
             res.json({ok: false, status: 'error', message: err.message});
             return next(err);
         }
+
         if (!user) {
             return res.json({ok: false, status: 'notauser', message: 'user not found'});
         }
@@ -84,7 +100,14 @@ const login = (req, res, next) => {
                 res.json({ok: false, status: 'error', message: err.message});
                 return next(err);
             }
-            return res.json({ok: true, status: 'success', message: ''});
+
+            db.get(getUserInformationQuery, [user.id], (err, row) => {
+                if (err) {
+                    res.json({ok: false, status: 'error', message: err.message});
+                    return next(err);
+                }
+                res.json({ok: true, userInfo: row});
+            })
         });
     })(req, res, next);
 }
@@ -102,8 +125,12 @@ const loginStatus = (req, res) => {
             ok: false
         });
     }
-    res.json({
-        ok: true
+    db.get(getUserInformationQuery, [req.user.id], (err, row) => {
+        if (err) {
+            res.json({ok: false, status: 'error', message: err.message});
+            return next(err);
+        }
+        res.json({ok: true, userInfo: row});
     })
 }
 

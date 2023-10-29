@@ -7,7 +7,7 @@ const {
     getFriends,
     acceptRequest,
     rejectRequest,
-    unSendRequest
+    unSendRequest, deleteFriend
 } = require("./friends");
 
 
@@ -22,12 +22,11 @@ router.use(function (req, res, next) {
 })
 
 router.get('/', getFriends);
-// router.get('/pending', getPending);
-// router.get('/sent', getSent); //бурда
 router.post('/send', sendRequest);
-router.delete('/send', unSendRequest);
+router.patch('/send', unSendRequest);
 router.post('/accept', acceptRequest);
 router.post('/reject', rejectRequest);
+router.post('/delete', deleteFriend);
 
 
 module.exports = router;
