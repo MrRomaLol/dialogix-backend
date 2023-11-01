@@ -1,4 +1,5 @@
 const db = require("../../../../database/db")
+const {userSockets, getIo} = require("../../../../socket");
 
 const requestFriendQuery = `
 INSERT INTO friends (user_id1, user_id2, status)
@@ -65,6 +66,12 @@ DELETE FROM friends
 WHERE (user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?);
 `
 
+const requestToUpdateFriendList = (id) => {
+    const userSocket = userSockets.get(id);
+    if (userSocket) {
+        getIo().to(userSocket).emit('update-friend-list-request');
+    }
+}
 
 const getFriends = (req, res) => {
     const myId = req.user.id;
@@ -93,17 +100,15 @@ const sendRequest = (req, res) => {
         }
 
         if (this.changes > 0) {
-            db.get(getUserByUsernameQuery, [friendName], (err, row) => {
+            db.get(getUserByUsernameQuery, [friendName], (err, friendRow) => {
                 if (err) {
                     console.log(err);
                     return res.json({ok: false, status: 'error', message: err.message});
                 }
 
-                db.get(getUserByIdQuery, [myId], (err, row) => {
+                requestToUpdateFriendList(friendRow.id);
 
-                })
-
-                return res.json({ok: true, friend: row});
+                return res.json({ok: true, friend: friendRow});
             })
         } else {
             return res.json({ok: false, status: 'nochange'});
@@ -120,6 +125,8 @@ const unSendRequest = (req, res) => {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
+
+        requestToUpdateFriendList(userId);
 
         return res.json({
             ok: true,
@@ -138,6 +145,8 @@ const acceptRequest = (req, res) => {
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
+        requestToUpdateFriendList(userId);
+
         return res.json({
             ok: true,
             userId
@@ -155,6 +164,8 @@ const rejectRequest = (req, res) => {
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
+        requestToUpdateFriendList(userId);
+
         return res.json({
             ok: true,
             userId
@@ -171,6 +182,8 @@ const deleteFriend = (req, res) => {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
+
+        requestToUpdateFriendList(userId);
 
         return res.json({
             ok: true,
