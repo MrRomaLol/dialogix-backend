@@ -15,4 +15,29 @@ db.serialize(function () {
     })
 });
 
+let isDBClosed = false;
+
+const closeDB = (cb) => {
+    if (isDBClosed) return;
+    db.close((err) => {
+        if (err) {
+            console.error('Error closing the database:', err.message);
+        } else {
+            isDBClosed = true;
+            console.log('Database connection closed.');
+            cb?.();
+        }
+    });
+}
+
+process.on('exit', () => {
+    closeDB();
+});
+
+process.on('SIGINT', () => {
+    closeDB(() => {
+        process.exit(0);
+    });
+});
+
 module.exports = db;

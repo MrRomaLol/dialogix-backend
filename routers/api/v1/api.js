@@ -4,6 +4,7 @@ const router = Router();
 const {loginStatus, register, logout, login} = require("./account");
 const friendsRoute = require('./friends')
 const guildsRoute = require('./guilds')
+const chatsRoute = require('./chats')
 const cdnRoute = require('./cdn')
 
 //main
@@ -27,6 +28,10 @@ router.use('/friends', friendsRoute);
 
 //guilds
 router.use('/guilds', guildsRoute);
+
+//chats
+router.use('/chats', chatsRoute);
+
 
 
 
