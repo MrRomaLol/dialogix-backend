@@ -9,7 +9,6 @@ let io;
 function initializeSocketIO(server) {
     io = new Server(server);
     io.on('connection', (socket) => {
-
         socket.on('my-id', (id) => {
             const user = userSockets.get(id);
             if (user) {
@@ -23,6 +22,14 @@ function initializeSocketIO(server) {
             const userId = socket.userId;
             if (userSockets.get(userId) === socket.id) {
                 userSockets.delete(userId);
+            }
+        })
+
+        socket.on('private-message-typing-ping', (userId) => {
+            const senderId = socket.userId;
+            const user = userSockets.get(userId);
+            if (user) {
+                socket.to(user).emit('private-message-typing', senderId);
             }
         })
     });
