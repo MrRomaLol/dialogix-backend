@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS [messages] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [sender_id] INTEGER NOT NULL,
 [receiver_id] INTEGER NOT NULL,
-[content] TEXT NOT NULL,
+[content] TEXT,
+[files] TEXT,
 [time_stamp] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY([sender_id]) REFERENCES [accounts]([id]),
 FOREIGN KEY([receiver_id]) REFERENCES [accounts]([id]));
