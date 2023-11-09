@@ -12,7 +12,7 @@ function initializeSocketIO(server) {
         socket.on('my-id', (id) => {
             const user = userSockets.get(id);
             if (user) {
-                socket.to(user).emit('connect-from-another-place');
+                io.to(user).emit('connect-from-another-place');
             }
             userSockets.set(id, socket.id);
             socket.userId = id;
@@ -25,14 +25,11 @@ function initializeSocketIO(server) {
             }
         })
 
-        socket.on('private-message-typing-ping', (userId) => {
-            const senderId = socket.userId;
-            const user = userSockets.get(userId);
-            if (user) {
-                socket.to(user).emit('private-message-typing', senderId);
-            }
-        })
+        require('./voice')(socket, io);
+        require('./chat')(socket, io);
     });
+
+
 }
 
 serverEmitter.on('message-send', (message) => {
