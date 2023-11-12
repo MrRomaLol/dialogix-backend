@@ -1,7 +1,8 @@
 const {Router} = require('express');
 const router = Router();
 
-const {loginStatus, register, logout, login} = require("./account");
+const {loginStatus, register, logout, login, changePassword} = require("./account");
+const profileRoute = require('./profile')
 const friendsRoute = require('./friends')
 const guildsRoute = require('./guilds')
 const chatsRoute = require('./chats')
@@ -23,6 +24,10 @@ router.post('/login', login)
 router.post('/logout', logout)
 router.post('/register', register);
 router.get('/loginstatus', loginStatus);
+router.post('/changepassword', changePassword);
+
+//profile
+router.use('/profile', profileRoute)
 
 //friends
 router.use('/friends', friendsRoute);

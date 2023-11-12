@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS [guilds] (
 [created_at] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY([creator_id]) REFERENCES [accounts]([id]));
 
-CREATE TABLE IF NOT EXISTS [server_channels] (
+CREATE TABLE IF NOT EXISTS [guild_channels] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [guild_id] INTEGER NOT NULL,
 [header_id] INTEGER,
@@ -56,13 +56,13 @@ CREATE TABLE IF NOT EXISTS [channels_header] (
 [name] TEXT NOT NULL,
 FOREIGN KEY([guild_id]) REFERENCES [guilds]([id]));
 
-CREATE TABLE IF NOT EXISTS [server_message] (
+CREATE TABLE IF NOT EXISTS [guild_message] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [channel_id] INTEGER NOT NULL,
 [user_id] INTEGER NOT NULL,
 [content] TEXT NOT NULL,
 [time_stamp] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY([channel_id]) REFERENCES [server_channels]([id]),
+FOREIGN KEY([channel_id]) REFERENCES [guild_channels]([id]),
 FOREIGN KEY([user_id]) REFERENCES [accounts]([id]));
 
 CREATE TABLE IF NOT EXISTS [guild_members] (
@@ -100,4 +100,4 @@ CREATE TABLE IF NOT EXISTS [channel_settings] (
 [channel_id] INTEGER NOT NULL,
 [setting_name] TEXT NOT NULL,
 [setting_value] TEXT NOT NULL,
-FOREIGN KEY([channel_id]) REFERENCES [server_channels]([id]));
+FOREIGN KEY([channel_id]) REFERENCES [guild_channels]([id]));
