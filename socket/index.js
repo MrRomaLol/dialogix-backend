@@ -1,7 +1,5 @@
 const {Server} = require('socket.io');
 
-const serverEmitter = require('../events')
-
 const userSockets = new Map();
 
 let io;
@@ -27,17 +25,11 @@ function initializeSocketIO(server) {
 
         require('./voice')(socket, io);
         require('./chat')(socket, io);
+        require('./profile')(socket, io);
     });
 
 
 }
-
-serverEmitter.on('message-send', (message) => {
-    const userSocket = userSockets.get(message.receiver_id);
-    if (userSocket) {
-        io.to(userSocket).emit('new-private-message', message);
-    }
-});
 
 module.exports = {
     initializeSocketIO,

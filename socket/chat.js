@@ -1,4 +1,5 @@
-const {userSockets} = require("./index");
+const {userSockets, getIo} = require("./index");
+const serverEmitter = require("../events");
 
 module.exports = function (socket, io) {
     socket.on('private-message-typing-ping', (userId) => {
@@ -9,3 +10,10 @@ module.exports = function (socket, io) {
         }
     })
 }
+
+serverEmitter.on('message-send', (message) => {
+    const userSocket = userSockets.get(message.receiver_id);
+    if (userSocket) {
+        getIo().to(userSocket).emit('new-private-message', message);
+    }
+});

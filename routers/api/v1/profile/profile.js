@@ -1,6 +1,7 @@
 const {getRandomName} = require("../../../../utils/utils");
 const {writeImageFromBuffer} = require("../../../../utils/fs");
 const db = require("../../../../database/db");
+const serverEmitter = require("../../../../events");
 
 const updateUserQuery = `
 UPDATE [users]
@@ -19,12 +20,17 @@ const updateProfile = (req, res) => {
                 console.log(err);
                 return res.json({ok: false, status: 'error', message: err.message});
             }
+
+            const profileInfo = {
+                nickname,
+                avatar_url: avatar,
+            }
+
+            serverEmitter.emit('profile-update', {profileInfo, id: myId});
+
             return res.json({
                 ok: true,
-                profileInfo: {
-                    nickname,
-                    avatar_url: avatar,
-                }
+                profileInfo
             })
         });
     }
