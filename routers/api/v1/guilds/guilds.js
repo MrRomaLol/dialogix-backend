@@ -47,13 +47,13 @@ const getGuilds = (req, res) => {
 const createGuild = (req, res) => {
     const myId = req.user.id;
 
-    db.run(createGuildQuery, [myId, req.body.guildName], function (err) {
+    db.run(createGuildQuery, [myId, req.body.guildName], function (err, result) {
         if (err) {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
-        const guildId = this.lastID;
+        const guildId = result.lastID;
 
         db.run(addMemberQuery, [myId, guildId, 'admin'], function (err) {
             const sendGuildInfo = () => {

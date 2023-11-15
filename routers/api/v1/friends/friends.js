@@ -93,13 +93,13 @@ const sendRequest = (req, res) => {
     const myId = req.user.id;
     const friendName = req.body.nickname;
 
-    db.run(requestFriendQuery, [myId, friendName, myId, myId], function (err) {
+    db.run(requestFriendQuery, [myId, friendName, myId, myId], function (err, result) {
         if (err) {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
-        if (this.changes > 0) {
+        if (result.changes > 0) {
             db.get(getUserByUsernameQuery, [friendName], (err, friendRow) => {
                 if (err) {
                     console.log(err);

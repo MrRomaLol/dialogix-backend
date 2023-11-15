@@ -14,8 +14,42 @@ WHERE (f1.user_id1 = ? AND f1.status IN ('friends', 'pending'))
    OR (f2.user_id2 = ? AND f2.status IN ('friends', 'pending'));
 `
 
-module.exports = function (socket, io) {
+const updateStatusInDbQuery = `
+UPDATE users
+SET status = ?
+WHERE id = ?;
+`
 
+module.exports = function (socket, io) {
+    socket.on('change-status', (status, cb) => {
+        const id = socket.userId;
+        db.all(getFriendsStatusQuery, Array(4).fill(id), (err, rows) => {
+            rows.forEach(row => {
+                const userSocket = userSockets.get(row.id);
+                if (userSocket) {
+                    io.to(userSocket).emit('user-status-update', {id, status});
+                }
+            })
+            cb(status);
+            db.run(updateStatusInDbQuery, [status, id]);
+        })
+    })
+
+    socket.on('disconnect', () => {
+        const userId = socket.userId;
+
+        if (userSockets.get(userId) === socket.id) {
+            db.all(getFriendsStatusQuery, Array(4).fill(userId), (err, rows) => {
+                rows.forEach(row => {
+                    const userSocket = userSockets.get(row.id);
+                    if (userSocket) {
+                        io.to(userSocket).emit('user-status-update', {id, status: "offline"});
+                    }
+                })
+                db.run(updateStatusInDbQuery, ["offline", id]);
+            })
+        }
+    })
 }
 
 serverEmitter.on('profile-update', ({profileInfo, id}) => {

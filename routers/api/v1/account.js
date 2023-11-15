@@ -57,14 +57,14 @@ const register = (req, res, next) => {
             req.body.email,
             hashedPasswd,
             salt
-        ], function (err) {
-            db.run("INSERT INTO users (user_id, nickname) VALUES (?, ?)", [this.lastID, req.body.username]);
+        ], function (err, result) {
+            db.run("INSERT INTO users (user_id, nickname) VALUES (?, ?)", [result.lastID, req.body.username]);
 
             if (err) {
                 res.json({ok: false, status: 'error', message: err.message});
                 return next(err);
             }
-            const lastId = this.lastID;
+            const lastId = result.lastID;
             const user = {
                 id: lastId,
                 username: req.body.username

@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS [users] (
 [user_id] INTEGER NOT NULL,
 [nickname] TEXT NOT NULL UNIQUE,
 [avatar_url] TEXT,
-[status] TEXT,
+[status] TEXT DEFAULT 'offline',
 FOREIGN KEY([user_id]) REFERENCES [accounts]([id]));
 
 CREATE TABLE IF NOT EXISTS [friends] (

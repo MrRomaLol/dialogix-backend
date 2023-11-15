@@ -51,13 +51,13 @@ const sendMessage = (req, res) => {
 
     const dbFiles = files ? JSON.stringify(filesObject) : null;
 
-    db.run(writeMessageQuery, [myId, receiverId, content, dbFiles], function (err) {
+    db.run(writeMessageQuery, [myId, receiverId, content, dbFiles], function (err, result) {
         if (err) {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
-        db.get(getMessageById, [this.lastID], (err, row) => {
+        db.get(getMessageById, [result.lastID], (err, row) => {
             if (err) {
                 console.log(err);
                 return res.json({ok: false, status: 'error', message: err.message});
