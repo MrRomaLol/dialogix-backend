@@ -16,20 +16,12 @@ module.exports = function (socket, io) {
         }
     })
 
-    // socket.on('call-user', data => {
-    //     const user = userSockets.get(data.userToCall);
-    //     if (user) {
-    //         io.to(user).emit('calling', {
-    //             from: data.from,
-    //             signalData: data.signalData
-    //         })
-    //     }
-    // })
-    //
-    // socket.on('acceptCall', data => {
-    //     const user = userSockets.get(data.to);
-    //     if (user) {
-    //         io.to(user).emit('callAccepted', data.signalData)
-    //     }
-    // })
+    socket.on('end-private-call', (to) => {
+        io.to(socket.id).emit('private-call-ended');
+
+        const user = userSockets.get(to);
+        if (user) {
+            io.to(user).emit('private-call-ended');
+        }
+    })
 }
