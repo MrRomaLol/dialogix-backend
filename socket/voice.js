@@ -16,9 +16,15 @@ module.exports = function (socket, io) {
         }
     })
 
-    socket.on('end-private-call', (to) => {
-        io.to(socket.id).emit('private-call-ended');
+    socket.on('cancel-private-call', (to) => {
+        const user = userSockets.get(to);
+        if (user) {
+            io.to(user).emit('private-call-canceled');
+        }
+    })
 
+    socket.on('end-private-call', (to) => {
+        console.log(to);
         const user = userSockets.get(to);
         if (user) {
             io.to(user).emit('private-call-ended');
