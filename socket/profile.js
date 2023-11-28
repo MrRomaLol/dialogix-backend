@@ -36,10 +36,10 @@ module.exports = function (socket, io) {
     })
 
     socket.on('disconnect', () => {
-        const userId = socket.userId;
+        const id = socket.userId;
 
-        if (userSockets.get(userId) === socket.id) {
-            db.all(getFriendsStatusQuery, Array(4).fill(userId), (err, rows) => {
+        if (userSockets.get(id) === socket.id) {
+            db.all(getFriendsStatusQuery, Array(4).fill(id), (err, rows) => {
                 rows.forEach(row => {
                     const userSocket = userSockets.get(row.id);
                     if (userSocket) {

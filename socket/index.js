@@ -18,18 +18,18 @@ function initializeSocketIO(server) {
         })
 
         socket.on('disconnect', () => {
-            const userId = socket.userId;
-            if (userSockets.get(userId) === socket.id) {
-                userSockets.delete(userId);
-            }
+            setTimeout(() => {
+                const userId = socket.userId;
+                if (userSockets.get(userId) === socket.id) {
+                    userSockets.delete(userId);
+                }
+            }, 100)
         })
 
         require('./voice')(socket, io);
         require('./chat')(socket, io);
         require('./profile')(socket, io);
     });
-
-
 }
 
 module.exports = {
