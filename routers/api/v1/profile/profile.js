@@ -78,4 +78,14 @@ const updateProfile = (req, res) => {
     }
 }
 
-module.exports = {updateProfile, updateSetting, fetchSettings}
+const updateAppBackground = (req, res) => {
+    const myId = req.user.id;
+    const base64Image = req.body.backgroundImage;
+
+    const bgName = `${getRandomName(20)}.jpg`;
+    writeImageFromBuffer(`content/users/${myId}/bg/${bgName}`, base64Image, () => {
+        res.json({ok: true, bgName: bgName});
+    })
+}
+
+module.exports = {updateProfile, updateAppBackground, updateSetting, fetchSettings}

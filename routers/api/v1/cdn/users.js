@@ -12,4 +12,13 @@ router.get('/:userId/:avatar', (req, res) => {
     res.sendFile(imagePath);
 })
 
+router.get('/bg/:userId/:bgname', (req, res) => {
+    const userId = req.params.userId;
+    const bg = req.params.bgname;
+
+    const imagePath = join(appDir, `content/users/${userId}/bg/${bg}`);
+
+    res.sendFile(imagePath);
+})
+
 module.exports = router;

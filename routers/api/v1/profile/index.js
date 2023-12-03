@@ -1,6 +1,6 @@
 const {Router} = require("express");
 
-const {updateProfile, fetchSettings, updateSetting} = require("./profile");
+const {updateProfile, fetchSettings, updateSetting, updateAppBackground} = require("./profile");
 
 const router = Router();
 
@@ -17,5 +17,6 @@ router.use(function (req, res, next) {
 router.post('/update', updateProfile);
 router.get('/settings', fetchSettings);
 router.post('/settings', updateSetting);
+router.post('/uploadbackground', updateAppBackground);
 
 module.exports = router
