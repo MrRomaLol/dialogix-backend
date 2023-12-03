@@ -23,7 +23,6 @@ const serverHttp = createServerHttp(app);
 const serverHttps = createServerHttps(credentials, app);
 
 initializeSocketIO(serverHttp);
-initializeSocketIO(serverHttps);
 
 app.use(express.static('public'));
 

@@ -1,5 +1,5 @@
 const {Router} = require("express");
-const {createGuild, getGuilds} = require("./guilds");
+const {createGuild, getGuilds, createCategory, loadGuild, createChannel, deleteCategory, deleteChannel} = require("./guilds");
 
 const router = Router();
 
@@ -13,7 +13,12 @@ router.use(function (req, res, next) {
     next();
 })
 
-router.get('/', getGuilds)
-router.post('/create', createGuild)
+router.get('/', getGuilds);
+router.get('/info', loadGuild);
+router.post('/create', createGuild);
+router.post('/createcategory', createCategory);
+router.patch('/deletecategory', deleteCategory);
+router.post('/createchannel', createChannel);
+router.patch('/deletechannel', deleteChannel);
 
 module.exports = router;

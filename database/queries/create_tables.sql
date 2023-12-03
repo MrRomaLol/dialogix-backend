@@ -44,13 +44,13 @@ FOREIGN KEY([creator_id]) REFERENCES [accounts]([id]));
 CREATE TABLE IF NOT EXISTS [guild_channels] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [guild_id] INTEGER NOT NULL,
-[header_id] INTEGER,
+[category_id] INTEGER,
 [name] TEXT NOT NULL,
 [channel_type] TEXT NOT NULL,
 FOREIGN KEY([guild_id]) REFERENCES [guilds]([id]),
-FOREIGN KEY([header_id]) REFERENCES [channels_header]([id]));
+FOREIGN KEY([category_id]) REFERENCES [guild_channels_category]([id]));
 
-CREATE TABLE IF NOT EXISTS [channels_header] (
+CREATE TABLE IF NOT EXISTS [guild_channels_category] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [guild_id] INTEGER NOT NULL,
 [name] TEXT NOT NULL,
