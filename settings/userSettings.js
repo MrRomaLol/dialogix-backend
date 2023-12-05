@@ -1,6 +1,6 @@
 const db = require("../database/db");
-const settingNames = ["user_status", "app_bg"];
-const defaultValues = ["online", ""];
+const settingNames = ["user_status", "app_bg", "app_lang"];
+const defaultValues = ["online", "", "en"];
 
 const addUserSettingQuery = `
 INSERT INTO user_settings (user_id, setting_name, setting_value)
