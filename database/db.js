@@ -14,6 +14,7 @@ db.serialize(function () {
             db.run(query);
         }
     })
+    db.run('UPDATE users SET status = "offline"');
 });
 
 const dbQueue = async.queue((task, callback) => {

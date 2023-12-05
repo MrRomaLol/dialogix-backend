@@ -1,6 +1,7 @@
 const db = require("../../../../database/db");
 const {writeImageFromBuffer} = require("../../../../utils/fs");
 const {getRandomName} = require("../../../../utils/utils");
+const serverEmitter = require("../../../../events");
 
 const getGuildByUserIdQuery = `
 SELECT g.id, g.creator_id as creatorId, g.name, g.avatar_url as avatarUrl  
@@ -20,6 +21,23 @@ SELECT * FROM guild_channels
 WHERE guild_id = ?;
 `
 
+const getUsersByGuildIdQuery = `
+SELECT
+    gm.id AS guild_user_id,
+    gm.user_id,
+    gm.role,
+    u.id AS user_id,
+    u.nickname,
+    u.avatar_url,
+    u.status
+FROM
+    guild_members gm
+JOIN
+    users u ON gm.user_id = u.user_id
+WHERE
+    gm.guild_id = ?;
+`
+
 const createGuildQuery = `
 INSERT INTO [guilds] (creator_id, name)
 VALUES (?, ?);
@@ -37,8 +55,13 @@ FROM [guilds] where id = ?
 `
 
 const addMemberQuery = `
-INSERT INTO [guild_members] (user_id, guild_id, [role]) 
-VALUES (?, ?, ?)
+INSERT INTO guild_members (user_id, guild_id, role)
+SELECT ?, ?, ?
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM guild_members
+    WHERE user_id = ? AND guild_id = ?
+);
 `
 
 const createCategoryQuery = `
@@ -85,6 +108,31 @@ AND EXISTS (
 );
 `
 
+const addInviteLinkQuery = `
+INSERT INTO guild_invites (invite_link, guild_id, sender_id, invited_users)
+VALUES (?, ?, ?, ?);
+`
+
+const getInviteLinkQuery = `
+SELECT * FROM guild_invites
+WHERE invite_link = ?;
+`
+
+const getGuildInfoQuery = `
+SELECT id, name, avatar_url FROM guilds
+WHERE id = ?;
+`
+
+const getUserInfoQuery = `
+SELECT id, nickname, avatar_url FROM users
+WHERE id = ?
+`
+
+const kickUserFromGuildQuery = `
+DELETE FROM guild_members
+WHERE id = ?
+`
+
 const getGuilds = (req, res) => {
     const myId = req.user.id;
 
@@ -114,9 +162,14 @@ const loadGuild = (req, res) => {
                 return res.json({ok: false, status: 'error', message: err.message});
             }
 
-            //TODO: users
+            db.all(getUsersByGuildIdQuery, [guildId], function (err, usersRows) {
+                if (err) {
+                    console.log(err);
+                    return res.json({ok: false, status: 'error', message: err.message});
+                }
 
-            return res.json({ok: true, categories: channelsCategoryRows, channels: channelsRows});
+                return res.json({ok: true, categories: channelsCategoryRows, channels: channelsRows, users: usersRows});
+            })
         })
     })
 }
@@ -132,7 +185,7 @@ const createGuild = (req, res) => {
 
         const guildId = result.lastID;
 
-        db.run(addMemberQuery, [myId, guildId, 'admin'], function (err) {
+        db.run(addMemberQuery, [myId, guildId, 'creator', myId, guildId], function (err) {
             const sendGuildInfo = () => {
                 if (err) {
                     console.log(err);
@@ -175,6 +228,8 @@ const createCategory = (req, res) => {
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
+        serverEmitter.emit('guild-updates', {guildId, eventType: "createCategory"});
+
         const category = {id: result.lastID, guild_id: guildId, name: categoryName};
         return res.json({ok: true, category});
     })
@@ -197,6 +252,8 @@ const deleteCategory = (req, res) => {
                 return res.json({ok: false, status: 'error', message: err.message});
             }
 
+            serverEmitter.emit('guild-updates', {guildId, eventType: "deleteCategory"});
+
             return res.json({ok: true});
         })
     })
@@ -214,6 +271,8 @@ const createChannel = (req, res) => {
             console.log(err);
             return res.json({ok: false, status: 'error', message: err.message});
         }
+
+        serverEmitter.emit('guild-updates', {guildId, eventType: "createChannel"});
 
         const channel = {
             id: result.lastID,
@@ -237,8 +296,135 @@ const deleteChannel = (req, res) => {
             return res.json({ok: false, status: 'error', message: err.message});
         }
 
+        serverEmitter.emit('guild-updates', {guildId, eventType: "deleteChannel"});
+
         return res.json({ok: true});
     })
 }
 
-module.exports = {getGuilds, loadGuild, createGuild, createCategory, deleteCategory, createChannel, deleteChannel}
+const generateInviteLink = (req, res) => {
+    const myId = req.user.id;
+    const guildId = req.body.guildId;
+    const invitedUsers = req.body.invitedUsers;
+
+    const link = getRandomName(16);
+
+    const invitedUsersJSON = JSON.stringify(invitedUsers);
+
+    db.run(addInviteLinkQuery, [link, guildId, myId, invitedUsersJSON], function (err) {
+        if (err) {
+            console.log(err);
+            return res.json({ok: false, status: 'error', message: err.message});
+        }
+
+        return res.json({ok: true, link, guildId, invitedUsers});
+    })
+}
+
+const getInviteInfo = (req, res) => {
+    const myId = req.user.id;
+    const inviteLink = req.query.id;
+
+    db.get(getInviteLinkQuery, [inviteLink], function (err, inviteRow) {
+        if (err) {
+            console.log(err);
+            return res.json({ok: false, status: 'error', message: err.message});
+        }
+
+        const invited = JSON.parse(inviteRow.invited_users);
+
+        if (!invited.includes(myId)) {
+            return res.json({ok: false, status: 'you_not_invited', message: 'you_not_invited'});
+        }
+
+        db.get(getGuildInfoQuery, [inviteRow.guild_id], function (err, guildRow) {
+            if (err) {
+                console.log(err);
+                return res.json({ok: false, status: 'error', message: err.message});
+            }
+
+            db.get(getUserInfoQuery, [inviteRow.sender_id], function (err, userRow) {
+                if (err) {
+                    console.log(err);
+                    return res.json({ok: false, status: 'error', message: err.message});
+                }
+
+                return res.json({ok: true, user: userRow, guild: guildRow});
+            })
+        })
+    })
+}
+
+const acceptInvite = (req, res) => {
+    const myId = req.user.id;
+    const inviteLink = req.query.id;
+
+    db.get(getInviteLinkQuery, [inviteLink], function (err, inviteRow) {
+        if (err) {
+            console.log(err);
+            return res.json({ok: false, status: 'error', message: err.message});
+        }
+
+        const invited = JSON.parse(inviteRow.invited_users);
+
+        if (!invited.includes(myId)) {
+            return res.json({ok: false, status: 'you_not_invited', message: 'you_not_invited'});
+        }
+
+        db.run(addMemberQuery, [myId, inviteRow.guild_id, 'member', myId, inviteRow.guild_id], function (err) {
+            if (err) {
+                console.log(err);
+                return res.json({ok: false, status: 'error', message: err.message});
+            }
+
+            db.get(getGuildInfoById, [inviteRow.guild_id], function (err, result) {
+                if (err) {
+                    console.log(err);
+                    return res.json({ok: false, status: 'error', message: err.message});
+                }
+
+                serverEmitter.emit('guild-updates', {guildId: inviteRow.guild_id, eventType: "userAdd"});
+
+                return res.json({ok: true, guild: result});
+            })
+        })
+    })
+}
+
+const kickUser = (req, res) => {
+    const myId = req.user.id;
+    const guildId = req.body.guildId;
+    const memberInGuildId = req.body.memberInGuildId;
+    const userId = req.body.userId;
+
+    db.get(getGuildInfoById, [guildId], function (err, row) {
+        if (err) {
+            console.log(err);
+            return res.json({ok: false, status: 'error', message: err.message});
+        }
+
+        if (row.creatorId !== myId) {
+            return res.json({ok: false, status: 'you are not creator', message: "you are not creator"});
+        }
+
+        db.run(kickUserFromGuildQuery, [memberInGuildId], function (err) {
+            serverEmitter.emit('guild-updates', {guildId, eventType: "userKick", eventArgs: {kickedUserId: userId}});
+
+            return res.json({ok: true, memberInGuildId, guildId});
+        })
+    })
+}
+
+module.exports = {
+    getGuilds,
+    loadGuild,
+    createGuild,
+    generateInviteLink,
+    getInviteInfo,
+    acceptInvite,
+    createCategory,
+    deleteCategory,
+    createChannel,
+    deleteChannel,
+    kickUser
+}

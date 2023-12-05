@@ -69,8 +69,17 @@ CREATE TABLE IF NOT EXISTS [guild_members] (
 [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 [user_id] INTEGER NOT NULL,
 [guild_id] INTEGER NOT NULL,
-[role] TEXT NOT NULL DEFAULT member,
+[role] TEXT NOT NULL DEFAULT 'member',
 FOREIGN KEY([user_id]) REFERENCES [accounts]([id]),
+FOREIGN KEY([guild_id]) REFERENCES [guilds]([id]));
+
+CREATE TABLE IF NOT EXISTS [guild_invites] (
+[id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+[invite_link] TEXT NOT NULL,
+[guild_id] INTEGER NOT NULL,
+[sender_id] INTEGER NOT NULL,
+[invited_users] TEXT NOT NULL,
+FOREIGN KEY([sender_id]) REFERENCES [accounts]([id]),
 FOREIGN KEY([guild_id]) REFERENCES [guilds]([id]));
 
 CREATE TABLE IF NOT EXISTS [feedbacks] (

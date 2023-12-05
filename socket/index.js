@@ -17,6 +17,14 @@ function initializeSocketIO(server) {
             cb();
         })
 
+        socket.on('join', (room) => {
+            socket.join(room);
+        })
+
+        socket.on('leave', (room) => {
+            socket.leave(room);
+        })
+
         socket.on('disconnect', () => {
             setTimeout(() => {
                 const userId = socket.userId;
@@ -29,6 +37,7 @@ function initializeSocketIO(server) {
         require('./voice')(socket, io);
         require('./chat')(socket, io);
         require('./profile')(socket, io);
+        require('./guilds')(socket, io);
     });
 }
 
